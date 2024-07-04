@@ -2,6 +2,7 @@
 # define xDirPin 5
 # define yStepPin 3
 # define yDirPin 6
+# define enablePin 8
 
 # define joystickX A0
 # define joystickY A1
@@ -15,6 +16,8 @@ void setup() {
   pinMode(yDirPin, OUTPUT);
   pinMode(joystickX, INPUT);
   pinMode(joystickY, INPUT);
+  pinMode(enablePin, OUTPUT);
+  digitalWrite(enablePin, LOW);
 }
 
 void loop() {
