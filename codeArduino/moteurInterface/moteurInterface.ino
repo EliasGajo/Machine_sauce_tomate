@@ -14,11 +14,12 @@
 # define yFinDeCoursePin 10
 # define zFinDeCoursePin 11
 
-# define xMaxPos 1000
+# define xMaxPos 8000
 # define yMaxPos 1000
 # define zMaxPos 1000
 
 # define stepsPerRev 200
+# define noCalibration 1
 
 int xJoystickVal = 0;
 int yJoystickVal = 0;
@@ -50,6 +51,14 @@ void setup() {
 
   pinMode(enablePin, OUTPUT);
   digitalWrite(enablePin, LOW);
+
+  Serial.begin(9600);
+
+  if(noCalibration) {
+    Serial.println("Pas de calibration !");
+  } else {
+    calibrateXYZ();
+  }
 }
 
 void loop() {
@@ -59,11 +68,11 @@ void loop() {
   zJoystickVal = analogRead(joystickZ);
 
   if(xJoystickVal > 800) {
-    xStepUp();
+    xStepDown();
   }
 
   if(xJoystickVal < 200) {
-    xStepDown();
+    xStepUp();
   }
 
   if(yJoystickVal > 800) {
@@ -83,13 +92,28 @@ void loop() {
   }
 }
 
+void calibrateXYZ() {
+  while(!xPosCalibrated) {
+    xStepDown();
+  }
+  Serial.println("Axe X calibré !");
+  while(!yPosCalibrated) {
+    yStepDown();
+  }
+  Serial.println("Axe Y calibré !");
+  while(!zPosCalibrated) {
+    zStepDown();
+  }
+  Serial.println("Axe Z calibré !");
+}
+
 void xStepDown() {
   if(digitalRead(xFinDeCoursePin)) {
     xPos = 0;
     xPosCalibrated = 1;
   }
   if(!xPosCalibrated || xPos > 0) {
-    digitalWrite(xDirPin, LOW);
+    digitalWrite(xDirPin, HIGH);
     runOneXStep();
     xPos --;
   }
@@ -97,7 +121,7 @@ void xStepDown() {
 
 void xStepUp() {
   if(xPos < xMaxPos) {
-    digitalWrite(xDirPin, HIGH);
+    digitalWrite(xDirPin, LOW);
     runOneXStep();
     xPos ++;
   }
