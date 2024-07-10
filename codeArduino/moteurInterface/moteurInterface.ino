@@ -8,10 +8,29 @@
 
 # define joystickX A0
 # define joystickY A1
-
 # define joystickZ A2
 
+# define xFinDeCoursePin 9
+# define yFinDeCoursePin 10
+# define zFinDeCoursePin 11
+
+# define xMaxPos 1000
+# define yMaxPos 1000
+# define zMaxPos 1000
+
 # define stepsPerRev 200
+
+int xJoystickVal = 0;
+int yJoystickVal = 0;
+int zJoystickVal = 0;
+
+int xPosCalibrated = 0;
+int yPosCalibrated = 0;
+int zPosCalibrated = 0;
+
+int xPos = 0;
+int yPos = 0;
+int zPos = 0;
 
 void setup() {
  	pinMode(xStepPin, OUTPUT);
@@ -20,47 +39,107 @@ void setup() {
   pinMode(yDirPin, OUTPUT);
   pinMode(zStepPin, OUTPUT);
   pinMode(zDirPin, OUTPUT);
+
   pinMode(joystickX, INPUT);
   pinMode(joystickY, INPUT);
   pinMode(joystickZ, INPUT);
+
+  pinMode(xFinDeCoursePin, INPUT);
+  pinMode(yFinDeCoursePin, INPUT);
+  pinMode(zFinDeCoursePin, INPUT);
+
   pinMode(enablePin, OUTPUT);
   digitalWrite(enablePin, LOW);
 }
 
 void loop() {
 
-  int xVal = analogRead(joystickX);
-  int yVal = analogRead(joystickY);
-  int zVal = analogRead(joystickZ);
+  xJoystickVal = analogRead(joystickX);
+  yJoystickVal = analogRead(joystickY);
+  zJoystickVal = analogRead(joystickZ);
 
-  if(xVal > 800) {
-    digitalWrite(xDirPin, HIGH); // Sens de rotation par défaut
+  if(xJoystickVal > 800) {
+    xStepUp();
+  }
+
+  if(xJoystickVal < 200) {
+    xStepDown();
+  }
+
+  if(yJoystickVal > 800) {
+    yStepUp();
+  }
+
+  if(yJoystickVal < 200) {
+    yStepDown();
+  }
+
+  if(zJoystickVal > 700) {
+    zStepUp();
+  }
+
+  if(zJoystickVal < 300) {
+    zStepDown();
+  }
+}
+
+void xStepDown() {
+  if(digitalRead(xFinDeCoursePin)) {
+    xPos = 0;
+    xPosCalibrated = 1;
+  }
+  if(!xPosCalibrated || xPos > 0) {
+    digitalWrite(xDirPin, LOW);
     runOneXStep();
+    xPos --;
   }
+}
 
-  if(xVal < 200) {
-    digitalWrite(xDirPin, LOW); // Sens de rotation inverse
+void xStepUp() {
+  if(xPos < xMaxPos) {
+    digitalWrite(xDirPin, HIGH);
     runOneXStep();
+    xPos ++;
   }
+}
 
-  if(yVal > 800) {
-    digitalWrite(yDirPin, HIGH); // Sens de rotation par défaut
+void yStepDown() {
+  if(digitalRead(yFinDeCoursePin)) {
+    yPos = 0;
+    yPosCalibrated = 1;
+  }
+  if(!yPosCalibrated || yPos > 0) {
+    digitalWrite(yDirPin, LOW);
     runOneYStep();
+    yPos --;
   }
+}
 
-  if(yVal < 200) {
-    digitalWrite(yDirPin, LOW); // Sens de rotation inverse
+void yStepUp() {
+  if(yPos < yMaxPos) {
+    digitalWrite(yDirPin, HIGH);
     runOneYStep();
+    yPos ++;
   }
+}
 
-  if(zVal > 700) {
-    digitalWrite(zDirPin, HIGH); // Sens de rotation par défaut
-    runOneZStep();
+void zStepDown() {
+  if(digitalRead(zFinDeCoursePin)) {
+    zPos = 0;
+    zPosCalibrated = 1;
   }
-
-  if(zVal < 300) {
-    digitalWrite(zDirPin, LOW); // Sens de rotation inverse
+  if(!zPosCalibrated || zPos > 0) {
+    digitalWrite(zDirPin, LOW);
     runOneZStep();
+    zPos --;
+  }
+}
+
+void zStepUp() {
+  if(zPos < zMaxPos) {
+    digitalWrite(zDirPin, HIGH);
+    runOneZStep();
+    zPos ++;
   }
 }
 
