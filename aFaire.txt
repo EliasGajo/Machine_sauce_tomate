@@ -1,0 +1,5 @@
+Placer une mini caméra juste en dessous des engrenages de la pince
+Créer le module de coupe avec caméra : 
+- 2 lames pour couper les extrémités
+- 1 caméra pour checker si la tomate est pourrie
+- 1 saut en dessous pour les déchets
