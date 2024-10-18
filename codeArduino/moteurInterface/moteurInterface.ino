@@ -14,9 +14,20 @@
 # define yFinDeCoursePin 10
 # define zFinDeCoursePin 11
 
-# define xMaxPos 8000
-# define yMaxPos 1000
-# define zMaxPos 1000
+# define xMaxPos 8000 // position maximale que le moteur X peut atteindre (sans foncer dans le mur)
+# define xCenterCamera 4000 // position du moteur X pour que la pince se trouve au milieu de la camera
+# define xOffsetCalibrationCamera 1000 // Le nombre de step que le moteur X doit faire pour calibrer la camera selon X (entre 2 photos)
+# define xMicrostepping 1 // La valeur de microstepping utilisée sur l'axe X (jumper X sur l'arduino shield)
+
+# define yMaxPos 1000 // position maximale que le moteur Y peut atteindre (sans foncer dans le mur)
+# define yCenterCamera 500 // position du moteur Y pour que la pince se trouve au milieu de la camera
+# define yOffsetCalibrationCamera 200 // Le nombre de step que le moteur Y doit faire pour calibrer la camera selon X (entre 2 photos)
+# define yMicrostepping 4 // La valeur de microstepping utilisée sur l'axe Y (jumper Y sur l'arduino shield)
+
+# define zMaxPos 1000 // // position maximale que le moteur Z peut atteindre (sans foncer dans le mur)
+# define zCenterCamera 500 // position du moteur Z pour que la pince se trouve au milieu de la camera
+# define zOffsetCalibrationCamera 200 // Le nombre de step que le moteur Z doit faire pour calibrer la camera selon X (entre 2 photos)
+# define zMicrostepping 4 // La valeur de microstepping utilisée sur l'axe Z (jumper Z sur l'arduino shield)
 
 # define stepsPerRev 200
 # define noCalibration 1
@@ -68,128 +79,177 @@ void loop() {
   zJoystickVal = analogRead(joystickZ);
 
   if(xJoystickVal > 800) {
-    xStepDown();
+    xStepDown(1);
   }
 
   if(xJoystickVal < 200) {
-    xStepUp();
+    xStepUp(1);
   }
 
   if(yJoystickVal > 800) {
-    yStepUp();
+    yStepUp(1);
   }
 
   if(yJoystickVal < 200) {
-    yStepDown();
+    yStepDown(1);
   }
 
   if(zJoystickVal > 700) {
-    zStepUp();
+    zStepUp(1);
   }
 
   if(zJoystickVal < 300) {
-    zStepDown();
+    zStepDown(1);
   }
 }
 
+// -------------------------------------------CALIBRATION FUNCTIONS-----------------------------------------------//
+
 void calibrateXYZ() {
   while(!xPosCalibrated) {
-    xStepDown();
+    xStepDown(1);
   }
   Serial.println("Axe X calibré !");
   while(!yPosCalibrated) {
-    yStepDown();
+    yStepDown(1);
   }
   Serial.println("Axe Y calibré !");
   while(!zPosCalibrated) {
-    zStepDown();
+    zStepDown(1);
   }
   Serial.println("Axe Z calibré !");
 }
 
-void xStepDown() {
-  if(digitalRead(xFinDeCoursePin)) {
-    xPos = 0;
-    xPosCalibrated = 1;
-  }
-  if(!xPosCalibrated || xPos > 0) {
-    digitalWrite(xDirPin, HIGH);
-    runOneXStep();
-    xPos --;
-  }
+// -------------------------------------------MOVE FUNCTIONS-----------------------------------------------//
+
+void moveToPositionXYZ(int targetX, int targetY, int targetZ) {
+  moveToPositionX(targetX);
+  moveToPositionY(targetY);
+  moveToPositionZ(targetZ);
 }
 
-void xStepUp() {
-  if(xPos < xMaxPos) {
-    digitalWrite(xDirPin, LOW);
-    runOneXStep();
-    xPos ++;
-  }
+void moveToPositionX(int targetX) {
+  int remainingSteps = targetX - xPos;
+  xStep(remainingSteps);
 }
 
-void yStepDown() {
-  if(digitalRead(yFinDeCoursePin)) {
-    yPos = 0;
-    yPosCalibrated = 1;
-  }
-  if(!yPosCalibrated || yPos > 0) {
-    digitalWrite(yDirPin, LOW);
-    runOneYStep();
-    yPos --;
-  }
+void moveToPositionY(int targetY) {
+  int remainingSteps = targetY - yPos;
+  yStep(remainingSteps);
 }
 
-void yStepUp() {
-  if(yPos < yMaxPos) {
-    digitalWrite(yDirPin, HIGH);
-    runOneYStep();
-    yPos ++;
+void moveToPositionZ(int targetZ) {
+  int remainingSteps = targetZ - zPos;
+  zStep(remainingSteps);
+}
+
+// -------------------------------------------STEP FUNCTIONS-----------------------------------------------//
+void xStep(int nbSteps) {
+  if(nbSteps > 0) {
+    xStepUp(nbSteps);
+  } else if(nbSteps < 0) {
+    xStepDown(-nbSteps);
   }
 }
 
-void zStepDown() {
-  if(digitalRead(zFinDeCoursePin)) {
-    zPos = 0;
-    zPosCalibrated = 1;
-  }
-  if(!zPosCalibrated || zPos > 0) {
-    digitalWrite(zDirPin, LOW);
-    runOneZStep();
-    zPos --;
-  }
+void xStepUp(int nbSteps) {
+  xPos = stepUp(nbSteps, xPos, xMaxPos, xStepPin, xDirPin, xMicrostepping);
 }
 
-void zStepUp() {
-  if(zPos < zMaxPos) {
-    digitalWrite(zDirPin, HIGH);
-    runOneZStep();
-    zPos ++;
+void xStepDown(int nbSteps) {
+  xPos = stepDown(nbSteps, xPos, &xPosCalibrated, xFinDeCoursePin, xStepPin, xDirPin, xMicrostepping);
+}
+
+void yStep(int nbSteps) {
+  if(nbSteps > 0) {
+    yStepUp(nbSteps);
+  } else if(nbSteps < 0) {
+    yStepDown(-nbSteps);
   }
 }
 
-void runOneXStep() {
- 	runOneStep(xStepPin);
+void yStepUp(int nbSteps) {
+  yPos = stepUp(nbSteps, yPos, yMaxPos, yStepPin, yDirPin, yMicrostepping);
 }
 
-void runOneYStep() {
-  runOneStepMicroStep4(yStepPin);
+void yStepDown(int nbSteps) {
+  yPos = stepDown(nbSteps, yPos, &yPosCalibrated, yFinDeCoursePin, yStepPin, yDirPin, yMicrostepping);
 }
 
-void runOneZStep() {
-  runOneStepMicroStep4(zStepPin);
+void zStep(int nbSteps) {
+  if(nbSteps > 0) {
+    zStepUp(nbSteps);
+  } else if(nbSteps < 0) {
+    zStepDown(-nbSteps);
+  }
 }
 
-void runOneStep(int stepPin) {
-  digitalWrite(stepPin, HIGH);
- 	delayMicroseconds(350);
- 	digitalWrite(stepPin, LOW);
- 	delayMicroseconds(350);
+void zStepUp(int nbSteps) {
+  zPos = stepUp(nbSteps, zPos, zMaxPos, zStepPin, zDirPin, zMicrostepping);
 }
 
-void runOneStepMicroStep4(int stepPin) {
-  digitalWrite(stepPin, HIGH);
- 	delayMicroseconds(100);
- 	digitalWrite(stepPin, LOW);
- 	delayMicroseconds(100);
+void zStepDown(int nbSteps) {
+  zPos = stepDown(nbSteps, zPos, &zPosCalibrated, zFinDeCoursePin, zStepPin, zDirPin, zMicrostepping);
 }
 
+int stepUp(int nbSteps, int pos, int maxPos, int stepPin, int dirPin, int microstep) {
+  for(int i = 0; i < nbSteps; i ++) {
+    if(pos < maxPos) {
+      digitalWrite(dirPin, LOW);
+      runOneStep(stepPin, microstep);
+      pos ++;
+    }
+  }
+  return pos;
+}
+
+int stepDown(int nbSteps, int pos, int* posCalibrated, int finDeCoursePin, int stepPin, int dirPin, int microstep) {
+  for(int i = 0; i < nbSteps; i ++) {
+    if(digitalRead(finDeCoursePin)) {
+      pos = 0;
+      *posCalibrated = 1;
+    }
+    if(!*posCalibrated || pos > 0) {
+      digitalWrite(dirPin, HIGH);
+      runOneStep(stepPin, microstep);
+      pos --;
+    }
+  }
+  return pos;
+}
+
+void runOneStep(int stepPin, int microstep) {
+  int delayMicros = 400 / microstep;
+  for(int i = 0; i < microstep; i ++) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(delayMicros);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(delayMicros);
+  }
+}
+
+// -------------------------------------------GETTER FUNCTIONS-----------------------------------------------//
+
+void getXCenterCamera() {
+  return xCenterCamera;
+}
+
+void getXOffsetCalibrationCamera() {
+  return xOffsetCalibrationCamera;
+}
+
+void getYCenterCamera() {
+  return yCenterCamera;
+}
+
+void getYOffsetCalibrationCamera() {
+  return yOffsetCalibrationCamera;
+}
+
+void getZCenterCamera() {
+  return zCenterCamera;
+}
+
+void getZOffsetCalibrationCamera() {
+  return zOffsetCalibrationCamera;
+}
